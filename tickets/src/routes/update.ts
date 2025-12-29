@@ -7,6 +7,8 @@ import {
   requireAuth,
   NotAuthorizedError,
 } from '@ticketingapppkg/common';
+import { TicketUpdatedPublisher } from '../events/publishers/ticket-updated-publisher';
+import { natsWrapper } from '../nats-wrapper';
 
 const router = express.Router();
 
@@ -38,7 +40,15 @@ router.put(
     });
 
     await ticket.save();
-    res.status(201).send(ticket);
+    new TicketUpdatedPublisher(natsWrapper.client).publish({
+      id: ticket._id.toHexString(),
+      title: ticket.title,
+      price: ticket.price,
+      userId: ticket.userId,
+      version: ticket.version,
+    });
+
+    res.send(ticket);
   }
 );
 
